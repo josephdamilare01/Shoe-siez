@@ -1,0 +1,129 @@
+library(tidyverse)
+dat1 <- read.csv("C:/Users/DELL/Desktop/2024_Projects/Healthcare prediction/From linear to neutral/From Linear regression to neaural network/archive (6)/hight.csv")
+set.seed(123)
+dataa <- as.data.frame(dat1 %>% select(-Gender))
+height_bar <- mean(dataa$Hight)
+weight_bar <- mean(dataa$Weight)
+Shoe_size_bar <- mean(dataa$Shoe.size)
+sd_height <- sd(dataa$Hight)
+sd_weight <- sd(dataa$Weight)
+sd_shoe_size <- sd(dataa$Shoe.size)
+library(dlookr)
+diagnose_outlier(dataa)
+plot(dataa$Hight, dataa$Weight)
+plot(dat$Hight, dataa$Shoe.size)
+plot(dat$Shoe.size, dataa$Weight)
+diffr <- cbind(H_H_bar = dataa$Hight - height_bar,
+                   W_W_bar = dataa$Weight - weight_bar,
+                   S_S_bar = dataa$Shoe.size - Shoe_size_bar)
+diffr <- as.data.frame(diffr)
+centroid <- c(height_bar, weight_bar, Shoe_size_bar)
+diffr$HW <- diffr$H_H_bar * diffr$W_W_bar
+diffr$HS <- diffr$H_H_bar * diffr$S_S_bar
+diffr$WS <- diffr$W_W_bar * diffr$S_S_bar
+#Estimation of the relation parameter
+r_HW <- sum(diffr$HW)/sqrt(sum(diffr$H_H_bar^2) * sum(diffr$W_W_bar^2))
+r_HS <- sum(diffr$HW)/sqrt(sum(diffr$H_H_bar^2) * sum(diffr$S_S_bar^2))
+r_SW <- sum(diffr$WS)/sqrt(sum(diffr$S_S_bar^2) * sum(diffr$W_W_bar^2))
+#Simple Linear model
+b_HW <- sum(diffr$HW)/ sum(diffr$W_W_bar^2)
+c_HW <- height_bar - b_HW * weight_bar
+model1 <- function(x){
+  y = b_HW * x  + c_HW
+  return(y)
+}
+H_cap <-model1(dataa$Weight)
+b_SH <- sum(diffr$HS)/ sum(diffr$H_H_bar^2)
+c_HS <- Shoe_size_bar - b_SH * height_bar
+model2 <- function(x){
+  y = x * b_SH + c_HS
+  return(y)
+}
+S_cap <- model2(dataa$Weight)
+li <-lm(Hight~Weight, data =dataa)
+l2 <-lm(Shoe.size~Hight, data =dataa)
+
+SST <- sum((dataa$Hight - height_bar)^2)
+SSE <- sum((dataa$Hight - H_cap)^2)
+SSR <- sum((H_cap - height_bar)^2)
+SSE + SSR
+MSE <- SSE/ (length(dataa$Hight) - 2)
+sd <- sqrt(MSE)
+R_sqr <- (SSR/SST) * 100
+residu <- dataa$Hight - H_cap
+residu_squar <- (dataa$Hight - H_cap)^2
+plot(dataa$Hight, residu)
+plot(dataa$Hight, residu_squar, col ="red")
+
+
+####Transformation 
+#Log - log
+TL <- dataa %>% select(Hight, Weight, Shoe.size) %>% transmute(Log_H = log(Hight),
+                                    Log_W = log(Weight), Log_S = log(Shoe.size))
+
+plot(TL$Log_H, TL$Log_W)
+plot(TL$Log_H, TL$Log_S)
+plot(TL$Log_W, TL$Log_S)
+L_height_bar <- mean(TL$Log_H)
+L_weight_bar <- mean(TL$Log_W)
+L_Shoe_size_bar <- mean(TL$Log_S)
+L_sd_height <- sd(TL$Log_H)
+L_sd_weight <- sd(TL$Log_W)
+L_sd_shoe_size <- sd(TL$Log_S)
+
+
+L_diffr <- cbind(L_H_H_bar = TL$Log_H - L_height_bar,
+               L_W_W_bar = TL$Log_W - L_weight_bar,
+               L_S_S_bar = TL$Log_S - L_Shoe_size_bar)
+L_diffr <- as.data.frame(L_diffr)
+centroid <- c(L_height_bar, L_weight_bar, L_Shoe_size_bar)
+L_diffr$L_HW <- L_diffr$L_H_H_bar * L_diffr$L_W_W_bar
+L_diffr$L_HS <- L_diffr$L_H_H_bar * L_diffr$L_S_S_bar
+L_diffr$L_WS <- L_diffr$L_W_W_bar * L_diffr$L_S_S_bar
+#Estimation of the relation parameter
+L_r_HW <- sum(L_diffr$L_HW)/sqrt(sum(L_diffr$L_H_H_bar^2) * sum(L_diffr$L_W_W_bar^2))
+L_r_HS <- sum(L_diffr$L_HW)/sqrt(sum(L_diffr$L_H_H_bar^2) * sum(L_diffr$L_S_S_bar^2))
+L_r_SW <- sum(L_diffr$L_WS)/sqrt(sum(L_diffr$L_S_S_bar^2) * sum(L_diffr$L_W_W_bar^2))
+
+L_b_HW <- sum(L_diffr$L_HW)/ sum(L_diffr$L_W_W_bar^2)
+L_c_HW <- L_height_bar - L_b_HW * L_weight_bar
+L_model1 <- function(x){
+  y = L_b_HW * x  + L_c_HW
+  return(y)
+}
+L_H_cap <-model1(TL$Log_W)
+L_b_SH <- sum(L_diffr$L_HS)/ sum(L_diffr$L_H_H_bar^2)
+L_c_HS <- L_Shoe_size_bar - L_b_SH * L_height_bar
+L_model2 <- function(x){
+  y = x * L_b_SH + L_c_HS
+  return(y)
+}
+L_S_cap <- L_model2(TL$Log_S)
+
+L_SST <- sum((TL$Log_H - L_height_bar)^2)
+L_SSE <- sum((TL$Log_H - L_H_cap)^2)
+L_SSR <- sum((L_H_cap - L_height_bar)^2)
+L_SSE + L_SSR
+L_MSE <- L_SSE/ (length(TL$Log_H) - 2)
+L_sd <- sqrt(L_MSE)
+L_R_sqr <- (L_SSR/L_SST) * 100
+L_residu <- TL$Log_H - L_H_cap
+L_residu_squar <- (TL$Log_H - L_H_cap)^2
+plot(TL$Log_H, L_residu)
+plot(TL$Log_H, L_residu_squar)
+plot(L_residu_squar, TL$Log_H, col ="red")
+
+ ##########################################################
+ Neural Network
+ ###########################################################
+library(neuralnet)
+normalize <- function(x){
+  y = (x - min(x)) / (max(x) - min(x))
+}
+
+dat <- dat1 %>% transmute(Hight = normalize(Hight), Weight = normalize(Weight),
+                         Shoe.size = normalize(Shoe.size), Gender = ifelse(Gender =="F",1,0))
+
+ANN <- neuralnet(Hight ~., data = dat, hidden = 3, err.fct = "sse", act.fct = "logistic")
+ANN
+plot(ANN)
